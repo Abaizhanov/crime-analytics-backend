@@ -25,20 +25,46 @@ class CrimeController extends Controller
         $west = $request->input('west');
         $zoom = $request->input('zoom');
 
-        $limit = 1000;
+        if ($zoom >= 17) {
 
-        if ($zoom < 14) {
-            $limit = 200;
-        } elseif ($zoom < 16) {
-            $limit = 500;
+            return DB::table('crimes')
+                ->select(
+                    DB::raw('latitude as lat'),
+                    DB::raw('longitude as lng'),
+                    'crime_name',
+                    'year'
+                )
+                ->whereBetween('latitude', [$south, $north])
+                ->whereBetween('longitude', [$west, $east])
+                ->whereBetween('latitude', [40, 50])
+                ->whereBetween('longitude', [70, 90])
+                ->limit(500)
+                ->get();
         }
 
-        return DB::table('crimes')
-            ->select('latitude', 'longitude', 'crime_name', 'year')
-            ->whereBetween('latitude', [$south, $north])
-            ->whereBetween('longitude', [$west, $east])
-            ->orderByRaw('random()')
-            ->limit($limit)
-            ->get();
+        $grid = 0.075;
+
+        if ($zoom > 10) $grid = 0.03;
+        if ($zoom > 12) $grid = 0.015;
+        if ($zoom > 14) $grid = 0.0075;
+        if ($zoom > 16) $grid = 0.003;
+
+        return DB::select("
+SELECT
+    AVG(latitude) as lat,
+    AVG(longitude) as lng,
+    COUNT(*) as count
+FROM crimes
+WHERE latitude BETWEEN ? AND ?
+AND longitude BETWEEN ? AND ?
+GROUP BY
+    FLOOR(latitude / ?) ,
+    FLOOR(longitude / ?)
+", [
+            $south, $north,
+            $west, $east,
+            $grid,
+            $grid
+        ]);
     }
 }

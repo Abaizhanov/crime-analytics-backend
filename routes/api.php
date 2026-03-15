@@ -5,3 +5,4 @@ use App\Http\Controllers\Api\CrimeController;
 
 Route::get('/stats/year', [CrimeController::class, 'statsByYear']);
 Route::get('/map', [CrimeController::class, 'map']);
+Route::get('/map/filters', [CrimeController::class, 'filterOptions']);
